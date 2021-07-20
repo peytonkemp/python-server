@@ -2,7 +2,9 @@ import json
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from animals import get_all_animals, get_single_animal, create_animal, delete_animal, update_animal
-
+from locations import get_all_locations
+from employees import get_all_employees, get_single_employee
+from customers import get_all_customers, get_single_customer
 
 class HandleRequests(BaseHTTPRequestHandler):
     """Handles requests to the server for GET, POST, PUT, and Delete
@@ -31,7 +33,6 @@ class HandleRequests(BaseHTTPRequestHandler):
             pass
         except ValueError:
             pass
-
         return (resource, id)
 
     def do_OPTIONS(self):
@@ -54,11 +55,26 @@ class HandleRequests(BaseHTTPRequestHandler):
         (resource, id) = self.parse_url(self.path)
         response = f'{[]}'
 
-        if resource == 'animals':
+        if resource == "animals":
             if id is not None:
-                response = f'{get_single_animal(id)}'
+                response = f"{get_single_animal(id)}"
             else:
-                response = f'{get_all_animals()}'
+                response = f"{get_all_animals()}"
+        elif resource == "locations":
+            if id is not None:
+                response = f"{get_single_animal(id)}"
+            else:
+                response = f"{get_all_locations()}"
+        elif resource == "customers":
+            if id is not None:
+                response = f"{get_single_customer(id)}"
+            else:
+                response = f"{get_all_customers()}"
+        elif resource == "employees":
+            if id is not None:
+                response = f"{get_single_employee(id)}"
+            else:
+                response = f"{get_all_employees()}"
 
         self.wfile.write(response.encode())
 
