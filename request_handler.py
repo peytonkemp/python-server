@@ -1,11 +1,10 @@
-from customers.request import get_customers_by_email
 import json
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from animals import get_all_animals, get_single_animal, create_animal, delete_animal, update_animal
 from locations import get_all_locations
 from employees import get_all_employees, get_single_employee
-from customers import get_all_customers, get_single_customer
+from customers import get_all_customers, get_single_customer, get_customers_by_email, get_customers_by_name
 
 class HandleRequests(BaseHTTPRequestHandler):
     """Handles requests to the server for GET, POST, PUT, and Delete
@@ -22,34 +21,30 @@ class HandleRequests(BaseHTTPRequestHandler):
         self.end_headers()
 
     def parse_url(self, path):
-        path_params = path.split("/")
+        """Parses the url to return the resource and id as a tuple
+        """
+        path_params = path.split('/')
         resource = path_params[1]
-
-        # Check if there is a query string parameter
         if "?" in resource:
-            # GIVEN: /customers?email=jenna@solis.com
+            query = resource.split('?')
+            param = query[1]
+            resource = query[0]
+            pair = param.split('=')
+            key = pair[0]
+            value = pair[1]
 
-            param = resource.split("?")[1]  # email=jenna@solis.com
-            resource = resource.split("?")[0]  # 'customers'
-            pair = param.split("=")  # [ 'email', 'jenna@solis.com' ]
-            key = pair[0]  # 'email'
-            value = pair[1]  # 'jenna@solis.com'
+            return (resource, key, value)
 
-            return ( resource, key, value )
-
-        # No query string parameter
         else:
             id = None
-
             try:
                 id = int(path_params[2])
             except IndexError:
-                pass  # No route parameter exists: /animals
+                pass
             except ValueError:
-                pass  # Request had trailing slash: /animals/
+                pass
 
             return (resource, id)
-
 
     def do_OPTIONS(self):
         """Sets the options headers
@@ -63,44 +58,43 @@ class HandleRequests(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        """Handles the GET requests for the server
+        """
         self._set_headers(200)
-
-        response = {}
-
-        # Parse URL and store entire tuple in a variable
+        print(self.path)
         parsed = self.parse_url(self.path)
 
-        # Response from parse_url() is a tuple with 2
-        # items in it, which means the request was for
-        # `/animals` or `/animals/2`
+        response = {}
         if len(parsed) == 2:
-            ( resource, id ) = parsed
 
+            (resource, id) = parsed  # pylint: disable=unbalanced-tuple-unpacking
             if resource == "animals":
                 if id is not None:
                     response = f"{get_single_animal(id)}"
                 else:
                     response = f"{get_all_animals()}"
+            elif resource == "locations":
+                if id is not None:
+                    response = f"{get_single_animal(id)}"
+                else:
+                    response = f"{get_all_locations()}"
             elif resource == "customers":
                 if id is not None:
                     response = f"{get_single_customer(id)}"
                 else:
                     response = f"{get_all_customers()}"
-
-        # Response from parse_url() is a tuple with 3
-        # items in it, which means the request was for
-        # `/resource?parameter=value`
+            elif resource == "employees":
+                if id is not None:
+                    response = f"{get_single_employee(id)}"
+                else:
+                    response = f"{get_all_employees()}"
         elif len(parsed) == 3:
-            ( resource, key, value ) = parsed
-
-            # Is the resource `customers` and was there a
-            # query parameter that specified the customer
-            # email as a filtering value?
+            (resource, key, value) = parsed
             if key == "email" and resource == "customers":
                 response = get_customers_by_email(value)
-
+            elif key == "name" and resource == "customers":
+                response = get_customers_by_name(value)
         self.wfile.write(response.encode())
-
 
     def do_POST(self):
         """Handles POST requests to the server
@@ -108,7 +102,6 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Set response code to 'Created'
         self._set_headers(201)
 
-        # taking what is sent from postman and putting it in a python dictionary
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
         post_body = json.loads(post_body)
@@ -123,9 +116,6 @@ class HandleRequests(BaseHTTPRequestHandler):
             response = {}
 
         self.wfile.write(f'{response}'.encode())
-
-    # Here's a method on the class that overrides the parent's method.
-    # It handles any PUT request.
 
     def do_PUT(self):
         """Handles PUT requests to the server
@@ -149,16 +139,18 @@ class HandleRequests(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         """
-        [summary]
+        Handles DELETE requests to the server
         """
         self._set_headers(204)
 
-        (resource_from_url, id_from_url) = self.parse_url(self.path)
+        (resource_from_url, id_from_url, _) = self.parse_url(self.path)
 
         if resource_from_url == "animals":
             delete_animal(id_from_url)
 
-        self.wfile.write("".encode())
+        # The .write method is not necessary because we are sending a 204 status code
+        # It is more explicit to have it though
+
 
 def main():
     """Starts the server on port 8088 using the HandleRequests class

@@ -1,7 +1,7 @@
-DROP Table Animal;
-Drop Table Customer;
-DrOp TaBlE Location;
-drop table Employee;
+-- DROP Table Animal;
+-- Drop Table Customer;
+-- DrOp TaBlE Location;
+-- drop table Employee;
 
 CREATE TABLE `Location` (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -64,11 +64,21 @@ INSERT INTO `Animal` VALUES (null, "Daps", "Kennel", "Boxer", 2, 2);
 
 
 
+-- select
+        --     a.name,
+        --     a.breed,
+        --     a.status,
+        --     a.location_id,
+        --     a.customer_id
+        -- from animal a
+        -- where a.id = 1;
+
 select
+            a.id,
             a.name,
             a.breed,
             a.status,
             a.location_id,
             a.customer_id
+            
         from animal a
-        where a.id = 1;
