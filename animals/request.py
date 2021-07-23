@@ -1,11 +1,12 @@
 import sqlite3
 import json
+
 from models import Animal
 
 ANIMALS = [
     {
         "id": 1,
-        "name": "Derrick Henry",
+        "name": "Snickers",
         "species": "Dog",
         "locationId": 1,
         "customerId": 4,
@@ -13,7 +14,7 @@ ANIMALS = [
     },
     {
         "id": 2,
-        "name": "Julio",
+        "name": "Gypsy",
         "species": "Dog",
         "locationId": 1,
         "customerId": 2,
@@ -21,7 +22,7 @@ ANIMALS = [
     },
     {
         "id": 3,
-        "name": "Trevor",
+        "name": "Blue",
         "species": "Cat",
         "locationId": 2,
         "customerId": 1,
@@ -45,6 +46,7 @@ def get_all_animals():
             a.breed,
             a.status,
             a.location_id,
+            a.customer_id
             
         from animal a
         """)
@@ -59,6 +61,7 @@ def get_all_animals():
             animals.append(animal.__dict__)
 
     return json.dumps(animals)
+
 
 def get_single_animal(id):
     """Gets a single animal from the list
@@ -95,15 +98,34 @@ def get_single_animal(id):
 
         return json.dumps(animal.__dict__)
 
-def create_animal(animal):
-    max_id = ANIMALS[-1]['id']
 
-    new_id = max_id + 1
-    animal['id'] = new_id
+def create_animal(new_animal):
+    """Adds the animal to the ANIMALS list
+        Args:
+            animal (dictionary): the post body from the request
+        Returns:
+            string: json formatted string
+    """
 
-    ANIMALS.append(animal)
+    with sqlite3.connect('./kennel.db') as conn:
+        db_cursor = conn.cursor()
 
-    return animal
+
+        db_cursor.execute("""
+        INSERT INTO Animal
+            ( name, breed, status, location_id, customer_id )
+        VALUES
+            ( ?, ?, ?, ?, ? );
+        """, (new_animal['name'], new_animal['breed'],
+            new_animal['status'], new_animal['location_id'],
+            new_animal['customer_id'], ))
+
+        id = db_cursor.lastrowid
+
+        new_animal['id'] = id
+
+        return json.dumps(new_animal)
+
 
 def delete_animal(id):
     """
@@ -111,15 +133,14 @@ def delete_animal(id):
     Args:
         id ([type]): [description]
     """
-    animal_index = -1
+    with sqlite3.connect('./kennel.db') as conn:
+        db_cursor = conn.cursor()
 
-    for index, animal in enumerate(ANIMALS):
-        if animal["id"] == id:
-            animal_index = index
-            break
+        db_cursor.execute("""
+        delete from Animal
+        where id = ?
+        """, (id, ))
 
-    if animal_index >= 0:
-        ANIMALS.pop(animal_index)
 
 def update_animal(id_of_animal, new_animal_dict):
     """
